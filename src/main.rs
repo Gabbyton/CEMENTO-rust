@@ -84,10 +84,12 @@ fn get_diagram_terms(diagram_elements: &Vec<DiagramElement>) -> Vec<&DiagramElem
     let diagram_terms: Vec<&DiagramElement> = diagram_elements
         .iter()
         .filter(|element: &&DiagramElement| {
-            element
-                .attributes
-                .as_ref()
-                .is_some_and(|attrs| !attrs.contains_key("edgeLabel"))
+            element.attributes.as_ref().is_some_and(|attrs| {
+                !attrs.contains_key("edgeLabel")
+                    && attrs
+                        .get("vertex")
+                        .is_some_and(|vertex| *vertex == Some("1".to_string()))
+            })
         })
         .collect();
     diagram_terms
@@ -96,7 +98,5 @@ fn get_diagram_terms(diagram_elements: &Vec<DiagramElement>) -> Vec<&DiagramElem
 fn main() {
     let xml_content = std::fs::read_to_string("sample.drawio").expect("cannot read drawio diagram");
     let diagram_elements = parse_drawio_file(&xml_content);
-    println!("{:#?}", diagram_elements);
-    // let diagram_terms = get_diagram_terms(&diagram_elements);
-    // println!("{:#?}", diagram_terms);
+    let diagram_terms = get_diagram_terms(&diagram_elements);
 }
