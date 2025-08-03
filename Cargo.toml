@@ -1,9 +1,8 @@
 [package]
-name = "cemento-rust"
+name = "cemento"
 version = "0.1.0"
 edition = "2024"
 
 [dependencies]
+ammonia = "4.1.1"
 roxmltree = "0.20.0"
-serde = {version = "1.0.219", features = ["derive"]}
-serde-xml-rs = "0.8.1"

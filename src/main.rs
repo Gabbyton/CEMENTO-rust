@@ -1,3 +1,4 @@
+use ammonia::{Builder, clean};
 use roxmltree::Document;
 use std::collections::{HashMap, HashSet};
 
@@ -22,6 +23,12 @@ struct DiagramEdge {
     label: Option<String>,
     source_id: Option<String>,
     target_id: Option<String>,
+}
+
+fn clean_term(term: String) -> String {
+    let clean_term = Builder::new().tags(HashSet::new()).clean(&term).to_string();
+    let clean_term = clean_term.replace("\"", "");
+    return clean_term.trim().to_string();
 }
 
 fn parse_drawio_file(xml_content: &str) -> Vec<DiagramElement> {
@@ -105,7 +112,7 @@ fn parse_diagram_terms(diagram_terms: Vec<&DiagramElement>) -> Vec<DiagramTerm> 
             });
         let diagram_term = DiagramTerm {
             id: term.id.to_owned(),
-            label: term.value.to_owned(),
+            label: term.value.to_owned().map(|label| clean_term(label)),
             parent: term_parent,
         };
         parsed_diagram_terms.push(diagram_term);
@@ -135,7 +142,7 @@ fn parse_diagram_edges(diagram_edges: Vec<&DiagramElement>) -> Vec<DiagramEdge> 
         });
         let diagram_edge: DiagramEdge = DiagramEdge {
             id: edge.id.to_owned(),
-            label: edge.value.to_owned(),
+            label: edge.value.to_owned().map(|label| clean_term(label)),
             source_id: source_id.flatten(),
             target_id: target_id.flatten(),
         };
