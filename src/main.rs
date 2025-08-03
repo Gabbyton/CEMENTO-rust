@@ -1,9 +1,5 @@
 use roxmltree::Document;
-use std::{
-    collections::{HashMap, HashSet},
-    hash::Hash,
-    ops::Deref,
-};
+use std::collections::{HashMap, HashSet};
 
 #[derive(Debug)]
 struct DiagramElement {
@@ -13,18 +9,20 @@ struct DiagramElement {
     attributes: Option<HashMap<String, Option<String>>>,
 }
 
-// #[derive(Debug, Serialize, Deserialize)]
-// struct DrawioGeometry {
-//     x: f64,
-//     y: f64,
-//     width: f64,
-//     height: f64,
-// }
+#[derive(Debug)]
+struct DiagramTerm {
+    id: String,
+    label: Option<String>,
+    parent: Option<String>,
+}
 
-// #[derive(Serialize, Deserialize)]
-// struct DrawioDocument {
-//     cells: HashMap<String, DrawioCell>,
-// }
+#[derive(Debug)]
+struct DiagramEdge {
+    id: String,
+    label: Option<String>,
+    source_id: Option<String>,
+    target_id: Option<String>,
+}
 
 fn parse_drawio_file(xml_content: &str) -> Vec<DiagramElement> {
     let document = Document::parse(xml_content).expect("Cannot parse the document");
@@ -95,8 +93,64 @@ fn get_diagram_terms(diagram_elements: &Vec<DiagramElement>) -> Vec<&DiagramElem
     diagram_terms
 }
 
+fn parse_diagram_terms(diagram_terms: Vec<&DiagramElement>) -> Vec<DiagramTerm> {
+    let mut parsed_diagram_terms: Vec<DiagramTerm> = Vec::new();
+    for term in diagram_terms {
+        let term_parent = term
+            .parent
+            .to_owned()
+            .and_then(|parent_id| match &*parent_id {
+                "1" => None,
+                _ => Some(parent_id),
+            });
+        let diagram_term = DiagramTerm {
+            id: term.id.to_owned(),
+            label: term.value.to_owned(),
+            parent: term_parent,
+        };
+        parsed_diagram_terms.push(diagram_term);
+    }
+    parsed_diagram_terms
+}
+
+fn get_diagram_edges(diagram_elements: &Vec<DiagramElement>) -> Vec<&DiagramElement> {
+    let diagram_edges: Vec<&DiagramElement> = diagram_elements
+        .iter()
+        .filter(|element| {
+            element.attributes.as_ref().is_some_and(|attrs| {
+                attrs.contains_key("source")
+                    || attrs.contains_key("target")
+                    || attrs.contains_key("edgeLabel")
+            })
+        })
+        .collect();
+    diagram_edges
+}
+
+fn parse_diagram_edges(diagram_edges: Vec<&DiagramElement>) -> Vec<DiagramEdge> {
+    let mut parsed_diagram_edges: Vec<DiagramEdge> = Vec::new();
+    for edge in diagram_edges {
+        let (source_id, target_id) = edge.attributes.as_ref().map_or((None, None), |attrs| {
+            (attrs.get("source").cloned(), attrs.get("target").cloned())
+        });
+        let diagram_edge: DiagramEdge = DiagramEdge {
+            id: edge.id.to_owned(),
+            label: edge.value.to_owned(),
+            source_id: source_id.flatten(),
+            target_id: target_id.flatten(),
+        };
+        parsed_diagram_edges.push(diagram_edge);
+    }
+    parsed_diagram_edges
+}
+
 fn main() {
     let xml_content = std::fs::read_to_string("sample.drawio").expect("cannot read drawio diagram");
     let diagram_elements = parse_drawio_file(&xml_content);
     let diagram_terms = get_diagram_terms(&diagram_elements);
+    let diagram_edges = get_diagram_edges(&diagram_elements);
+    let diagram_terms = parse_diagram_terms(diagram_terms);
+    let diagram_edges = parse_diagram_edges(diagram_edges);
+    println!("{:#?}", diagram_terms);
+    println!("{:#?}", diagram_edges);
 }
