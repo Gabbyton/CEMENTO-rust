@@ -1,4 +1,5 @@
-use ammonia::{Builder, clean};
+use ammonia::Builder;
+use petgraph::{graph::DiGraph, visit::EdgeRef};
 use roxmltree::Document;
 use std::collections::{HashMap, HashSet};
 
@@ -10,14 +11,14 @@ struct DiagramElement {
     attributes: Option<HashMap<String, Option<String>>>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Default)]
 struct DiagramTerm {
     id: String,
     label: Option<String>,
     parent: Option<String>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Default)]
 struct DiagramEdge {
     id: String,
     label: Option<String>,
@@ -151,13 +152,54 @@ fn parse_diagram_edges(diagram_edges: Vec<&DiagramElement>) -> Vec<DiagramEdge> 
     parsed_diagram_edges
 }
 
+fn generate_graph_edges(
+    diagram_terms: Vec<DiagramTerm>,
+    diagram_edges: Vec<DiagramEdge>,
+) -> Vec<(DiagramTerm, DiagramTerm, DiagramEdge)> {
+    let diagram_term_ids: HashMap<String, DiagramTerm> = diagram_terms
+        .into_iter()
+        .map(|term| (term.id.clone(), term))
+        .collect();
+    let graph_edges: Vec<(DiagramTerm, DiagramTerm, DiagramEdge)> = diagram_edges
+        .into_iter()
+        .filter(|edge| edge.source_id.is_some() && edge.target_id.is_some())
+        .map(|edge| {
+            (
+                diagram_term_ids
+                    .get(edge.source_id.as_ref().expect("cannot find source_id"))
+                    .cloned()
+                    .expect("Cannot retrieve source term for edge"),
+                diagram_term_ids
+                    .get(edge.target_id.as_ref().expect("cannot find target_id"))
+                    .cloned()
+                    .expect("Cannot retrieve target term for edge"),
+                edge,
+            )
+        })
+        .collect();
+    graph_edges
+}
+
 fn main() {
-    let xml_content = std::fs::read_to_string("sample.drawio").expect("cannot read drawio diagram");
+    let xml_content = std::fs::read_to_string("cco.drawio").expect("cannot read drawio diagram");
     let diagram_elements = parse_drawio_file(&xml_content);
     let diagram_terms = get_diagram_terms(&diagram_elements);
     let diagram_edges = get_diagram_edges(&diagram_elements);
     let diagram_terms = parse_diagram_terms(diagram_terms);
     let diagram_edges = parse_diagram_edges(diagram_edges);
-    println!("{:#?}", diagram_terms);
-    println!("{:#?}", diagram_edges);
+    // println!("{:#?}", diagram_terms);
+    // println!("{:#?}", diagram_edges);
+    let graph_edges = generate_graph_edges(diagram_terms, diagram_edges);
+    let mut g = DiGraph::<DiagramTerm, DiagramEdge>::new();
+    for edge in graph_edges {
+        let (source_term, target_term, graph_edge) = edge;
+        let source_idx = g.add_node(source_term);
+        let target_idx = g.add_node(target_term);
+        g.add_edge(source_idx, target_idx, graph_edge);
+    }
+    // for edge in g.edge_references() {
+    //     println!("{:#?}", g.node_weight(edge.source()));
+    //     println!("{:#?}", g.node_weight(edge.target()));
+    //     println!("{:#?}", edge.weight());
+    // }
 }
