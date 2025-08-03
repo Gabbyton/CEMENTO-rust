@@ -2,6 +2,11 @@
 name = "cemento"
 version = "0.1.0"
 edition = "2024"
+description = "A package for verifying, merging, and generating ontologies from modules and vice versa."
+license-file = "LICENSE.md"
+homepage = "https://github.com/Gabbyton/CEMENTO-rust"
+repository = "https://github.com/Gabbyton/CEMENTO-rust"
+readme = "README.md"
 
 [dependencies]
 ammonia = "4.1.1"
