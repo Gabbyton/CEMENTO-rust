@@ -7,8 +7,10 @@ license-file = "LICENSE.md"
 homepage = "https://github.com/Gabbyton/CEMENTO-rust"
 repository = "https://github.com/Gabbyton/CEMENTO-rust"
 readme = "README.md"
+include = ["templates/**/*"]
 
 [dependencies]
 ammonia = "4.1.1"
 petgraph = "0.8.2"
 roxmltree = "0.20.0"
+tera = "1.20.0"
