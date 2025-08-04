@@ -1,6 +1,6 @@
-pub use templates::get_template_dictionary;
+pub use template::get_template_dictionary;
 
-pub mod templates {
+pub mod template {
     use std::collections::HashMap;
     use std::ffi::OsStr;
     use std::fs::{read_dir, read_to_string};
@@ -10,7 +10,7 @@ pub mod templates {
     const TEMPLATE_PATH: &str = "templates";
 
     pub fn load_template(name: &OsStr) -> Result<String, Error> {
-        let path = Path::new(TEMPLATE_PATH).join(&name);
+        let path = Path::new(TEMPLATE_PATH).join(name);
         let template_string = read_to_string(path)?;
         Ok(template_string)
     }

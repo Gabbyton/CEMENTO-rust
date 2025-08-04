@@ -11,7 +11,7 @@ pub mod diagram_read {
     fn clean_term(term: String) -> String {
         let clean_term = Builder::new().tags(HashSet::new()).clean(&term).to_string();
         let clean_term = clean_term.replace("\"", "");
-        return clean_term.trim().to_string();
+        clean_term.trim().to_string()
     }
 
     fn parse_drawio_file(xml_content: &str) -> Vec<DiagramElement> {
@@ -26,15 +26,13 @@ pub mod diagram_read {
         let mut diagram_elements: Vec<DiagramElement> = Vec::new();
         for element in diagram_root.children().filter(|child| child.is_element()) {
             let element_id = element.attribute("id").unwrap().to_string();
-            let value = element.attribute("value").and_then(|s| Some(s.to_string()));
-            let parent = element
-                .attribute("parent")
-                .and_then(|s| Some(s.to_string()));
+            let value = element.attribute("value").map(|s| s.to_string());
+            let parent = element.attribute("parent").map(|s| s.to_string());
 
             let mut diagram_element = DiagramElement {
                 id: element_id,
-                value: value,
-                parent: parent,
+                value,
+                parent,
                 attributes: None,
             };
             let mut extra_attributes: HashMap<String, Option<String>> = HashMap::new();
@@ -46,7 +44,7 @@ pub mod diagram_read {
             for attr in other_attributes {
                 extra_attributes.insert(
                     String::from(*attr),
-                    element.attribute(*attr).and_then(|s| Some(s.to_string())),
+                    element.attribute(*attr).map(|s| s.to_string()),
                 );
             }
 
@@ -69,7 +67,7 @@ pub mod diagram_read {
         diagram_elements
     }
 
-    fn get_diagram_terms(diagram_elements: &Vec<DiagramElement>) -> Vec<&DiagramElement> {
+    fn get_diagram_terms(diagram_elements: &[DiagramElement]) -> Vec<&DiagramElement> {
         let diagram_terms: Vec<&DiagramElement> = diagram_elements
             .iter()
             .filter(|element: &&DiagramElement| {
@@ -96,7 +94,7 @@ pub mod diagram_read {
                 });
             let diagram_term = DiagramTerm {
                 id: term.id.to_owned(),
-                label: term.value.to_owned().map(|label| clean_term(label)),
+                label: term.value.to_owned().map(clean_term),
                 parent: term_parent,
             };
             parsed_diagram_terms.push(diagram_term);
@@ -104,7 +102,7 @@ pub mod diagram_read {
         parsed_diagram_terms
     }
 
-    fn get_diagram_edges(diagram_elements: &Vec<DiagramElement>) -> Vec<&DiagramElement> {
+    fn get_diagram_edges(diagram_elements: &[DiagramElement]) -> Vec<&DiagramElement> {
         let diagram_edges: Vec<&DiagramElement> = diagram_elements
             .iter()
             .filter(|element| {
@@ -126,7 +124,7 @@ pub mod diagram_read {
             });
             let diagram_edge: DiagramEdge = DiagramEdge {
                 id: edge.id.to_owned(),
-                label: edge.value.to_owned().map(|label| clean_term(label)),
+                label: edge.value.to_owned().map(clean_term),
                 source_id: source_id.flatten(),
                 target_id: target_id.flatten(),
             };

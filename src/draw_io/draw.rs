@@ -11,10 +11,10 @@ pub mod diagram_draw {
         let template_key = "circle";
         let template_path = templates
             .get(template_key)
-            .expect(format!("Cannot open template at {template_key}").as_str());
+            .unwrap_or_else(|| panic!("Cannot open template at {template_key}"));
 
         // TODO: move insert statement properties into serde structs, use serde to insert
-        let mut tera = Tera::new("templates/**/*").expect("Cannot read templates folder");
+        let tera = Tera::new("templates/**/*").expect("Cannot read templates folder");
         let mut context = Context::new();
         context.insert("shape_id", "blah");
         context.insert("shape_content", "bleh");
