@@ -1,7 +1,9 @@
 pub use template::get_template_dictionary;
 
 pub mod template {
+    use core::panic;
     use std::collections::HashMap;
+    use std::error::Error as DynError;
     use std::ffi::OsStr;
     use std::fs::{read_dir, read_to_string};
     use std::io::Error;
@@ -15,29 +17,27 @@ pub mod template {
         Ok(template_string)
     }
 
-    pub fn get_template_dictionary() -> Result<HashMap<String, String>, Error> {
+    pub fn get_template_dictionary() -> Result<HashMap<String, String>, Box<dyn DynError>> {
         let template_folder_path = Path::new(TEMPLATE_PATH);
-        let template_map: HashMap<String, String> = read_dir(template_folder_path)
-            .expect("Cannot read templates folder")
-            .filter(|folder| folder.as_ref().is_ok_and(|folder| folder.path().is_file()))
-            .map(|folder| {
-                let file_name = folder.expect("Cannot open folder name").file_name();
-                let path: &Path = file_name.as_ref();
-                let file_key = path
-                    .file_stem()
-                    .expect("The provided file name has no stem");
-                (
-                    file_key
+        let template_map: Result<HashMap<String, String>, Box<dyn DynError>> =
+            read_dir(template_folder_path)?
+                .filter(|folder| folder.as_ref().is_ok_and(|folder| folder.path().is_file()))
+                .map(|folder| {
+                    let file_name = folder?.file_name();
+                    let path: &Path = file_name.as_ref();
+                    let file_key = path
+                        .file_stem()
+                        .ok_or("Value not found")?
                         .to_os_string()
                         .into_string()
-                        .expect("Cannot convert file key OsString to string"),
-                    file_name
-                        .to_os_string()
-                        .into_string()
-                        .expect("Cannot convert file name from &OsStr to String"),
-                )
-            })
-            .collect();
-        Ok(template_map)
+                        .map_err(|os_str| panic!("Invalid UTF-8 for file key: {:?}", os_str))?;
+                    let template_file_path =
+                        file_name.to_os_string().into_string().map_err(|os_str| {
+                            panic!("Invalid UTF-8 for template_file_path: {:?}", os_str)
+                        })?;
+                    Ok((file_key, template_file_path))
+                })
+                .collect();
+        template_map
     }
 }
